@@ -42,9 +42,10 @@ def currency_to_decimal(currency: float) -> Decimal:
 
 class Importer(importer.ImporterProtocol):
 
-    def __init__(self, client_id: str, client_secret: str):
+    def __init__(self, client_id: str, client_secret: str, dedup_window_days: int = 10):
         self._client_id = client_id
         self._client_secret = client_secret
+        self._dedup_window_days = dedup_window_days
 
     def name(self) -> str:
         return 'autobean.truelayer'
@@ -55,7 +56,7 @@ class Importer(importer.ImporterProtocol):
     def extract(self, file: cache._FileMemo, existing_entries: Optional[list[Directive]] = None) -> list[Directive]:
         config = _Config(self._client_id, self._client_secret, file)
         extractor = _Extractor(config)
-        return extractor.extract(existing_entries)
+        return extractor.extract(existing_entries, self._dedup_window_days)
 
 
 class _Config:
@@ -79,12 +80,12 @@ class _Extractor:
         self._config = config
         self._oauth_manager = _OAuthManager(config)
 
-    def extract(self, existing_entries: Optional[list[Directive]] = None) -> list[Directive]:
+    def extract(self, existing_entries: Optional[list[Directive]] = None, dedup_window_days: int = 10) -> list[Directive]:
         for type_ in ACCOUNT_TYPES:
             self._update_accounts(type_)
         entries = self._fetch_all_transactions()
         if existing_entries:
-            entries = deduplicate.deduplicate(entries, existing_entries)
+            entries = deduplicate.deduplicate(entries, existing_entries, dedup_window_days)
         return entries
 
     @property
