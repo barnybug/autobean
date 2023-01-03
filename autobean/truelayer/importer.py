@@ -81,7 +81,7 @@ class _Extractor:
         self._oauth_manager = _OAuthManager(config)
 
     def extract(self, existing_entries: Optional[list[Directive]] = None, dedup_window_days: int = 10) -> list[Directive]:
-        for type_ in ACCOUNT_TYPES:
+        for type_ in self._config.data.get("account_types", ACCOUNT_TYPES):
             self._update_accounts(type_)
         entries = self._fetch_all_transactions()
         if existing_entries:
